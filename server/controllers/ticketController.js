@@ -77,3 +77,110 @@ exports.deleteTicket = asyncHandler(async (req, res) => {
     `Ticket ${result.ticketNumber} deleted successfully`
   );
 });
+
+/**
+ * @desc    Assign or claim ticket
+ * @route   PUT /api/tickets/:id/assign
+ * @access  Private (SUPPORT_AGENT, ADMIN)
+ */
+exports.assignTicket = asyncHandler(async (req, res) => {
+  const updatedTicket = await ticketService.assignTicket(
+    req.user,
+    req.params.id,
+    req.body
+  );
+  return ApiResponse.success(
+    res,
+    updatedTicket,
+    `Ticket ${updatedTicket.ticketNumber} assigned successfully`
+  );
+});
+
+/**
+ * @desc    Update ticket status following lifecycle state machine
+ * @route   PUT /api/tickets/:id/status
+ * @access  Private (SUPPORT_AGENT, ADMIN)
+ */
+exports.updateStatus = asyncHandler(async (req, res) => {
+  const updatedTicket = await ticketService.updateStatus(
+    req.user,
+    req.params.id,
+    req.body
+  );
+  return ApiResponse.success(
+    res,
+    updatedTicket,
+    `Ticket ${updatedTicket.ticketNumber} status changed to ${updatedTicket.status}`
+  );
+});
+
+/**
+ * @desc    Update ticket priority and recalculate SLA
+ * @route   PUT /api/tickets/:id/priority
+ * @access  Private (SUPPORT_AGENT, ADMIN)
+ */
+exports.updatePriority = asyncHandler(async (req, res) => {
+  const updatedTicket = await ticketService.updatePriority(
+    req.user,
+    req.params.id,
+    req.body
+  );
+  return ApiResponse.success(
+    res,
+    updatedTicket,
+    `Ticket ${updatedTicket.ticketNumber} priority changed to ${updatedTicket.priority}`
+  );
+});
+
+/**
+ * @desc    Resolve ticket with resolution notes
+ * @route   PUT /api/tickets/:id/resolve
+ * @access  Private (SUPPORT_AGENT, ADMIN)
+ */
+exports.resolveTicket = asyncHandler(async (req, res) => {
+  const updatedTicket = await ticketService.resolveTicket(
+    req.user,
+    req.params.id,
+    req.body
+  );
+  return ApiResponse.success(
+    res,
+    updatedTicket,
+    `Ticket ${updatedTicket.ticketNumber} resolved successfully`
+  );
+});
+
+/**
+ * @desc    Close ticket (Employee confirms resolution or Admin closes)
+ * @route   PUT /api/tickets/:id/close
+ * @access  Private (EMPLOYEE, ADMIN)
+ */
+exports.closeTicket = asyncHandler(async (req, res) => {
+  const updatedTicket = await ticketService.closeTicket(
+    req.user,
+    req.params.id
+  );
+  return ApiResponse.success(
+    res,
+    updatedTicket,
+    `Ticket ${updatedTicket.ticketNumber} closed successfully`
+  );
+});
+
+/**
+ * @desc    Reopen resolved ticket
+ * @route   PUT /api/tickets/:id/reopen
+ * @access  Private (EMPLOYEE, ADMIN)
+ */
+exports.reopenTicket = asyncHandler(async (req, res) => {
+  const updatedTicket = await ticketService.reopenTicket(
+    req.user,
+    req.params.id,
+    req.body
+  );
+  return ApiResponse.success(
+    res,
+    updatedTicket,
+    `Ticket ${updatedTicket.ticketNumber} reopened successfully`
+  );
+});

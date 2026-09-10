@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/categoryController');
+const { protect } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/roleMiddleware');
 
 // Routes: /api/categories
 router
   .route('/')
-  .get(categoryController.getCategories)
-  .post(categoryController.createCategory); // In Phase 5 roleMiddleware will guard this to ADMIN
+  .get(protect, categoryController.getCategories)
+  .post(protect, authorize('ADMIN'), categoryController.createCategory);
 
 router
   .route('/:id')
-  .get(categoryController.getCategoryById)
-  .put(categoryController.updateCategory); // In Phase 5 roleMiddleware will guard this to ADMIN
+  .get(protect, categoryController.getCategoryById)
+  .put(protect, authorize('ADMIN'), categoryController.updateCategory);
 
 module.exports = router;

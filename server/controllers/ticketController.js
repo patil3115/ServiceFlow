@@ -22,13 +22,13 @@ exports.createTicket = asyncHandler(async (req, res) => {
  * @access  Private
  */
 exports.getTickets = asyncHandler(async (req, res) => {
-  const tickets = await ticketService.getTickets(req.user, req.query);
+  const { tickets, pagination } = await ticketService.getTickets(req.user, req.query);
   return ApiResponse.success(
     res,
     tickets,
     `Retrieved ${tickets.length} tickets successfully`,
     200,
-    { total: tickets.length }
+    pagination
   );
 });
 

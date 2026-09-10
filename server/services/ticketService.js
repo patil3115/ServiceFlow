@@ -99,14 +99,14 @@ class TicketService {
   }
 
   /**
-   * Retrieve list of tickets respecting strict role-based ownership
+   * Retrieve paginated list of tickets with search, filtering, and role-based ownership scoping
    */
   async getTickets(user, queryParams = {}) {
     const filter = {};
 
     // 1. Authoritative Role Ownership Filter
     if (user.role === 'EMPLOYEE') {
-      // Employees strictly see ONLY tickets they personally created
+      // Employees strictly see ONLY tickets they personally created (even when searching or filtering)
       filter.createdBy = user._id;
     } else if (user.role === 'SUPPORT_AGENT') {
       // Support Agents can filter for assignedToMe, unassigned, or all accessible
@@ -114,31 +114,81 @@ class TicketService {
         filter.assignedTo = user._id;
       } else if (queryParams.view === 'unassigned') {
         filter.assignedTo = null;
+      } else if (queryParams.assignedTo) {
+        filter.assignedTo = queryParams.assignedTo;
       }
-      // Otherwise agent sees organizational tickets
+    } else if (user.role === 'ADMIN') {
+      if (queryParams.assignedTo) {
+        filter.assignedTo = queryParams.assignedTo;
+      }
+      if (queryParams.createdBy) {
+        filter.createdBy = queryParams.createdBy;
+      }
     }
-    // Administrators have unrestricted access
 
-    // 2. Composable Filters
+    // 2. Full Search across Ticket Number, Title, and Description
+    if (queryParams.search && queryParams.search.trim()) {
+      const searchRegex = new RegExp(queryParams.search.trim(), 'i');
+      filter.$or = [
+        { ticketNumber: searchRegex },
+        { title: searchRegex },
+        { description: searchRegex }
+      ];
+    }
+
+    // 3. Composable Exact Match Filters
     if (queryParams.status) {
-      filter.status = queryParams.status.toUpperCase();
+      filter.status = queryParams.status.toUpperCase().trim();
     }
     if (queryParams.priority) {
-      filter.priority = queryParams.priority.toUpperCase();
+      filter.priority = queryParams.priority.toUpperCase().trim();
     }
     if (queryParams.category) {
-      filter.category = queryParams.category;
+      filter.category = queryParams.category.trim();
     }
-    if (queryParams.assignedTo && user.role !== 'EMPLOYEE') {
-      filter.assignedTo = queryParams.assignedTo;
+    if (queryParams.department && user.role !== 'EMPLOYEE') {
+      filter.department = queryParams.department.trim();
     }
+
+    // 4. Date Range Filters
+    if (queryParams.startDate || queryParams.endDate) {
+      filter.createdAt = {};
+      if (queryParams.startDate) {
+        filter.createdAt.$gte = new Date(queryParams.startDate);
+      }
+      if (queryParams.endDate) {
+        const end = new Date(queryParams.endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    // 5. Server-Side Pagination
+    const page = Math.max(1, parseInt(queryParams.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(queryParams.limit, 10) || 10));
+    const skip = (page - 1) * limit;
+
+    const totalTickets = await Ticket.countDocuments(filter);
+    const totalPages = Math.ceil(totalTickets / limit) || 1;
 
     const tickets = await Ticket.find(filter)
       .populate('createdBy', 'name email department role')
       .populate('assignedTo', 'name email department role')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return tickets;
+    return {
+      tickets,
+      pagination: {
+        page,
+        limit,
+        totalTickets,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    };
   }
 
   /**

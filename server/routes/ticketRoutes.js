@@ -17,6 +17,8 @@ router
   .post(ticketController.createTicket)
   .get(ticketController.getTickets);
 
+const auditController = require('../controllers/auditController');
+
 // Specific action routes
 router.put('/:id/assign', authorize('SUPPORT_AGENT', 'ADMIN'), ticketController.assignTicket);
 router.put('/:id/status', authorize('SUPPORT_AGENT', 'ADMIN'), ticketController.updateStatus);
@@ -24,6 +26,7 @@ router.put('/:id/priority', authorize('SUPPORT_AGENT', 'ADMIN'), ticketControlle
 router.put('/:id/resolve', authorize('SUPPORT_AGENT', 'ADMIN'), ticketController.resolveTicket);
 router.put('/:id/close', authorize('EMPLOYEE', 'ADMIN'), ticketController.closeTicket);
 router.put('/:id/reopen', authorize('EMPLOYEE', 'ADMIN'), ticketController.reopenTicket);
+router.get('/:id/audit-logs', auditController.getTicketAuditLogs);
 
 router
   .route('/:id')

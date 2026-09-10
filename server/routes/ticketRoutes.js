@@ -18,6 +18,7 @@ router
   .get(ticketController.getTickets);
 
 const auditController = require('../controllers/auditController');
+const slaController = require('../controllers/slaController');
 
 // Specific action routes
 router.put('/:id/assign', authorize('SUPPORT_AGENT', 'ADMIN'), ticketController.assignTicket);
@@ -27,6 +28,7 @@ router.put('/:id/resolve', authorize('SUPPORT_AGENT', 'ADMIN'), ticketController
 router.put('/:id/close', authorize('EMPLOYEE', 'ADMIN'), ticketController.closeTicket);
 router.put('/:id/reopen', authorize('EMPLOYEE', 'ADMIN'), ticketController.reopenTicket);
 router.get('/:id/audit-logs', auditController.getTicketAuditLogs);
+router.get('/:id/sla', slaController.getTicketSla);
 
 router
   .route('/:id')

@@ -1,27 +1,17 @@
-# Stage 1: Build React Application
-FROM node:20-alpine AS build
+# Frontend React Development Container
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Copy package manifests and install dependencies automatically
 COPY package*.json ./
 RUN npm install
 
+# Copy application source code
 COPY . .
 
-ARG VITE_API_BASE_URL=http://localhost:5000/api
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Expose Vite dev server port
+EXPOSE 5173
 
-RUN npm run build
-
-# Stage 2: Serve via Nginx Alpine
-FROM nginx:alpine
-
-# Copy custom Nginx config for React SPA routing
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy build artifacts to Nginx html folder
-COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Start React development server binding to 0.0.0.0
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

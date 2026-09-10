@@ -47,6 +47,82 @@ ServiceFlow is deliberately built with **zero external bloated dependencies** (N
 
 ---
 
+## ⚡ Quick Start (Docker — Recommended)
+
+Docker is the **official and recommended way to run ServiceFlow**. You do **not** need Node.js, npm, or MongoDB installed on your host system.
+
+```
+                    Docker Compose
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+          ▼              ▼              ▼
+       client          server        mongodb
+       React           Express       MongoDB
+       :5173           :5000        (internal)
+```
+
+### Prerequisites
+* **Git**
+* **Docker Desktop** (running on Windows, macOS, or Linux)
+
+### 1. Clone & Start Application
+```bash
+git clone https://github.com/patil3115/ServiceFlow.git
+cd ServiceFlow
+docker compose up --build
+```
+*(To run in background mode: `docker compose up --build -d`)*
+
+Once started, open your web browser:
+* **Frontend Web App**: [http://localhost:5173](http://localhost:5173)
+* **Backend API**: [http://localhost:5000](http://localhost:5000)
+* **API Health Check**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+
+### 2. Seed Demo Data
+In another terminal, run the safe, idempotent seeder:
+```bash
+docker compose exec server npm run seed
+```
+*(This creates default categories, demo accounts, sample incidents, discussion comments, and audit records. It is safe to run multiple times without deleting existing data).*
+
+### 3. Run Regression Tests Inside Container
+```bash
+docker compose exec server npm test
+```
+
+### 4. Container Management Commands
+```bash
+# Check status of running containers
+docker compose ps
+
+# View backend server logs
+docker compose logs -f server
+
+# View frontend client logs
+docker compose logs -f client
+
+# Stop application containers
+docker compose down
+```
+
+---
+
+## 🔑 Demo & Test Accounts
+
+> [!NOTE]
+> **DEVELOPMENT / DEMO CREDENTIALS ONLY**
+> These accounts are populated via `docker compose exec server npm run seed`:
+
+| Role | Name | Email | Password | Department |
+| :--- | :--- | :--- | :--- | :--- |
+| **Administrator** | Alex Vance | `admin@serviceflow.local` | `Admin@12345` | IT Infrastructure |
+| **Support Agent** | Sarah Connor | `agent@serviceflow.local` | `Agent@12345` | IT Support Desk |
+| **Employee 1** | John Doe | `employee@serviceflow.local` | `Employee@12345` | Software Engineering |
+| **Employee 2** | Elena Rostova | `elena@serviceflow.local` | `Employee@12345` | Product Design |
+
+---
+
 ## 2. User Roles & RBAC Matrix
 
 ServiceFlow strictly isolates data and operations through three role tiers:

@@ -72,7 +72,7 @@ app.use(errorHandler);
 // Server listener: Connect to MongoDB before accepting incoming traffic
 if (require.main === module) {
   connectDB().then(() => {
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`[ServiceFlow] Backend server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
       console.log(`[ServiceFlow] Health check available at http://localhost:${PORT}/api/health`);
     });

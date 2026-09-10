@@ -11,16 +11,21 @@ const seedDatabase = async () => {
     console.log('[Seed] Connecting to MongoDB...');
     await connectDB();
 
-    console.log('[Seed] Clearing existing collections...');
-    await Promise.all([
-      User.deleteMany({}),
-      Category.deleteMany({}),
-      Ticket.deleteMany({}),
-      Comment.deleteMany({}),
-      AuditLog.deleteMany({})
-    ]);
+    const shouldReset = process.argv.includes('--reset');
+    if (shouldReset) {
+      console.log('[Seed] Explicit --reset flag detected: clearing existing collections...');
+      await Promise.all([
+        User.deleteMany({}),
+        Category.deleteMany({}),
+        Ticket.deleteMany({}),
+        Comment.deleteMany({}),
+        AuditLog.deleteMany({})
+      ]);
+    } else {
+      console.log('[Seed] Safe non-destructive mode: preserving all existing user and ticket data.');
+    }
 
-    console.log('[Seed] Seeding categories...');
+    console.log('[Seed] Checking/Seeding categories...');
     const categoriesData = [
       {
         name: 'Hardware',
@@ -51,48 +56,93 @@ const seedDatabase = async () => {
         description: 'Conference room audiovisual equipment, printing, and general inquiries.'
       }
     ];
-    const categories = await Category.insertMany(categoriesData);
-    console.log(`[Seed] Seeded ${categories.length} categories.`);
 
-    console.log('[Seed] Seeding users...');
-    // Create users individually so the pre('save') bcrypt password hook executes!
-    const adminUser = await User.create({
-      name: 'Alex Vance (Admin)',
-      email: 'admin@serviceflow.local',
-      password: 'Admin@12345',
-      department: 'IT Infrastructure',
-      role: 'ADMIN',
-      isActive: true
-    });
+    let categoryCount = 0;
+    for (const cat of categoriesData) {
+      const exists = await Category.findOne({ name: cat.name });
+      if (!exists) {
+        await Category.create(cat);
+        categoryCount++;
+      }
+    }
+    console.log(`[Seed] Categories checked. Added ${categoryCount} new categories.`);
 
-    const agentUser = await User.create({
-      name: 'Sarah Connor (Support Agent)',
-      email: 'agent@serviceflow.local',
-      password: 'Agent@12345',
-      department: 'IT Support Desk',
-      role: 'SUPPORT_AGENT',
-      isActive: true
-    });
+    console.log('[Seed] Checking/Seeding demo users...');
+    let adminUser = await User.findOne({ email: 'admin@serviceflow.local' });
+    if (!adminUser) {
+      adminUser = await User.create({
+        name: 'Alex Vance (Admin)',
+        email: 'admin@serviceflow.local',
+        password: 'Admin@12345',
+        department: 'IT Infrastructure',
+        role: 'ADMIN',
+        isActive: true
+      });
+      console.log('  + Created admin user: admin@serviceflow.local');
+    } else {
+      console.log('  ✓ Existing admin user preserved: admin@serviceflow.local');
+    }
 
-    const employeeUser = await User.create({
-      name: 'John Doe (Employee)',
-      email: 'employee@serviceflow.local',
-      password: 'Employee@12345',
-      department: 'Software Engineering',
-      role: 'EMPLOYEE',
-      isActive: true
-    });
+    let agentUser = await User.findOne({ email: 'agent@serviceflow.local' });
+    if (!agentUser) {
+      agentUser = await User.create({
+        name: 'Sarah Connor (Support Agent)',
+        email: 'agent@serviceflow.local',
+        password: 'Agent@12345',
+        department: 'IT Support Desk',
+        role: 'SUPPORT_AGENT',
+        isActive: true
+      });
+      console.log('  + Created agent user: agent@serviceflow.local');
+    } else {
+      console.log('  ✓ Existing agent user preserved: agent@serviceflow.local');
+    }
 
-    const secondEmployee = await User.create({
-      name: 'Elena Rostova (Employee)',
-      email: 'elena@serviceflow.local',
-      password: 'Employee@12345',
-      department: 'Product Design',
-      role: 'EMPLOYEE',
-      isActive: true
-    });
+    let employeeUser = await User.findOne({ email: 'employee@serviceflow.local' });
+    if (!employeeUser) {
+      employeeUser = await User.create({
+        name: 'John Doe (Employee)',
+        email: 'employee@serviceflow.local',
+        password: 'Employee@12345',
+        department: 'Software Engineering',
+        role: 'EMPLOYEE',
+        isActive: true
+      });
+      console.log('  + Created employee user: employee@serviceflow.local');
+    } else {
+      console.log('  ✓ Existing employee user preserved: employee@serviceflow.local');
+    }
 
-    console.log(`[Seed] Seeded 4 organizational users (1 Admin, 1 Support Agent, 2 Employees).`);
+    let secondEmployee = await User.findOne({ email: 'elena@serviceflow.local' });
+    if (!secondEmployee) {
+      secondEmployee = await User.create({
+        name: 'Elena Rostova (Employee)',
+        email: 'elena@serviceflow.local',
+        password: 'Employee@12345',
+        department: 'Product Design',
+        role: 'EMPLOYEE',
+        isActive: true
+      });
+      console.log('  + Created second employee user: elena@serviceflow.local');
+    } else {
+      console.log('  ✓ Existing employee user preserved: elena@serviceflow.local');
+    }
+
+    // Check if initial sample tickets already exist
+    const hasSampleTickets = await Ticket.exists({ ticketNumber: 'INC-1001' });
+    if (hasSampleTickets && !shouldReset) {
+      console.log('[Seed] Sample demo tickets (INC-1001) already present. Skipping ticket creation to preserve existing database state.');
+      console.log('\n========================================');
+      console.log('[Seed] SUCCESS: Database Ready & Preserved!');
+      console.log('========================================');
+      console.log('Development / Demo Credentials:');
+      console.log('  ADMIN:    admin@serviceflow.local    / Admin@12345');
+      console.log('  AGENT:    agent@serviceflow.local    / Agent@12345');
+      console.log('  EMPLOYEE: employee@serviceflow.local / Employee@12345');
+      console.log('  EMPLOYEE: elena@serviceflow.local    / Employee@12345');
+      console.log('========================================\n');
+      process.exit(0);
+    }
 
     console.log('[Seed] Seeding tickets with realistic SLA calculation...');
     const now = new Date();

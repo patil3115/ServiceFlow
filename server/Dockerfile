@@ -10,8 +10,8 @@ RUN apk add --no-cache libc6-compat
 # Copy package manifests
 COPY package*.json ./
 
-# Install dependencies (clean install)
-RUN npm install --omit=dev
+# Install dependencies automatically
+RUN npm install
 
 # Copy application source code
 COPY . .

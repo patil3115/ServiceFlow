@@ -1,7 +1,26 @@
 const assert = require('node:assert');
 
-const API_BASE = 'http://localhost:5000/api';
-const CLIENT_BASE = 'http://localhost:5173';
+const API_BASE = process.env.API_BASE || `http://localhost:${process.env.PORT || 5000}/api`;
+const CLIENT_CANDIDATES = [
+  process.env.TEST_CLIENT_URL,
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://client:5173'
+].filter(Boolean);
+
+async function checkClientReachability() {
+  for (const url of CLIENT_CANDIDATES) {
+    try {
+      const res = await fetch(url);
+      if (res.status === 200) {
+        return { ok: true, url, status: res.status };
+      }
+    } catch (err) {
+      // Continue to next candidate
+    }
+  }
+  return { ok: false };
+}
 
 let adminToken, agentToken, employeeToken, elenaToken;
 let adminUser, agentUser, employeeUser, elenaUser;
@@ -32,9 +51,9 @@ async function runRegressionSuite() {
   assert.strictEqual(health.data.database.status, 'connected');
   console.log('  ✓ Backend API healthy and MongoDB connected');
 
-  const clientRes = await fetch(CLIENT_BASE);
-  assert.strictEqual(clientRes.status, 200);
-  console.log('  ✓ Client Frontend server responding on port 5173\n');
+  const clientCheck = await checkClientReachability();
+  assert.strictEqual(clientCheck.ok, true, 'Frontend client must be reachable on port 5173');
+  console.log(`  ✓ Client Frontend server responding on ${clientCheck.url}\n`);
 
   // --- SUITE 2: Authentication & RBAC ---
   console.log('[Suite 2: Authentication & Role-Based Access Control]');

@@ -1,13 +1,13 @@
 version: '3.8'
 
 services:
-  # MongoDB Database Service
+  # MongoDB Database Service (Internal to Docker network)
   mongodb:
     image: mongo:7.0
     container_name: serviceflow-mongodb
     restart: unless-stopped
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     environment:
       - MONGO_INITDB_DATABASE=serviceflow
     volumes:
@@ -16,12 +16,12 @@ services:
       - serviceflow-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 5s
 
-  # Backend API Service
+  # Backend API Service (Express)
   server:
     build:
       context: ./server
@@ -32,28 +32,34 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
-      - NODE_ENV=production
+      - NODE_ENV=development
       - MONGO_URI=mongodb://mongodb:27017/serviceflow
       - JWT_SECRET=serviceflow_docker_production_secret_key_99
       - JWT_EXPIRES_IN=7d
       - CLIENT_URL=http://localhost:5173
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - serviceflow-network
 
-  # Frontend Web Client
+  # Frontend Web Client (React / Vite Dev Server)
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:5000/api
     container_name: serviceflow-client
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000/api
+    volumes:
+      - ./client:/app
+      - /app/node_modules
     depends_on:
       - server
     networks:

@@ -45,24 +45,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Fallback 404 Route
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Endpoint not found: ${req.originalUrl}`
-  });
+const apiRoutes = require('./routes');
+const errorHandler = require('./middleware/errorMiddleware');
+const AppError = require('./utils/appError');
+
+// Mount Master API Router
+app.use('/api', apiRoutes);
+
+// Fallback 404 Route for unhandled paths
+app.all('*', (req, res, next) => {
+  next(AppError.notFound(`Cannot find ${req.method} ${req.originalUrl} on this server`));
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('[Error Middleware]:', err);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+// Centralized Global Error Handler Middleware
+app.use(errorHandler);
 
 // Server listener: Connect to MongoDB before accepting incoming traffic
 if (require.main === module) {

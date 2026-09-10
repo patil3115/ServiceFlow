@@ -7,6 +7,7 @@ const ticketRoutes = require('./ticketRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const auditRoutes = require('./auditRoutes');
 const slaRoutes = require('./slaRoutes');
+const userRoutes = require('./userRoutes');
 
 // Mount sub-routers
 router.use('/auth', authRoutes);
@@ -15,6 +16,7 @@ router.use('/tickets', ticketRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/sla', slaRoutes);
+router.use('/users', userRoutes);
 
 // Informative index route for /api
 router.get('/', (req, res) => {

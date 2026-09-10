@@ -4,8 +4,13 @@ const ticketController = require('../controllers/ticketController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
+const commentRoutes = require('./commentRoutes');
+
 // All ticket routes require authentication
 router.use(protect);
+
+// Nested routes: /api/tickets/:ticketId/comments
+router.use('/:ticketId/comments', commentRoutes);
 
 router
   .route('/')

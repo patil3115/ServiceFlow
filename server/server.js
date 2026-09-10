@@ -27,6 +27,15 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
+
 // Health Check Endpoint (Reports Server & Database Status)
 app.get('/api/health', (req, res) => {
   const isDbConnected = mongoose.connection.readyState === 1;
@@ -63,10 +72,35 @@ app.use(errorHandler);
 // Server listener: Connect to MongoDB before accepting incoming traffic
 if (require.main === module) {
   connectDB().then(() => {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`[ServiceFlow] Backend server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
       console.log(`[ServiceFlow] Health check available at http://localhost:${PORT}/api/health`);
     });
+
+    // Graceful Shutdown Handlers (SIGTERM, SIGINT)
+    const handleGracefulShutdown = (signal) => {
+      console.log(`\n[ServiceFlow] Received ${signal}. Starting graceful shutdown...`);
+      server.close(async () => {
+        console.log('[ServiceFlow] HTTP server closed.');
+        try {
+          await mongoose.connection.close(false);
+          console.log('[ServiceFlow] MongoDB connection closed cleanly.');
+          process.exit(0);
+        } catch (err) {
+          console.error('[ServiceFlow] Error during database disconnection:', err);
+          process.exit(1);
+        }
+      });
+
+      // Force terminate after 10s if hanging
+      setTimeout(() => {
+        console.error('[ServiceFlow] Forced shutdown after timeout.');
+        process.exit(1);
+      }, 10000).unref();
+    };
+
+    process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
   }).catch((err) => {
     console.error(`[ServiceFlow] Failed to start server:`, err.message);
   });

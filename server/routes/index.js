@@ -3,10 +3,12 @@ const router = express.Router();
 
 const categoryRoutes = require('./categoryRoutes');
 const authRoutes = require('./authRoutes');
+const ticketRoutes = require('./ticketRoutes');
 
 // Mount sub-routers
 router.use('/auth', authRoutes);
 router.use('/categories', categoryRoutes);
+router.use('/tickets', ticketRoutes);
 
 // Informative index route for /api
 router.get('/', (req, res) => {

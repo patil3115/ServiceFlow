@@ -1,0 +1,23 @@
+{
+  "name": "serviceflow",
+  "version": "1.0.0",
+  "description": "ServiceFlow - Enterprise IT Service Desk & Incident Management Platform",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "build:client": "npm run build --prefix client"
+  },
+  "keywords": [
+    "mern",
+    "service-desk",
+    "incident-management",
+    "itsm",
+    "react",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Ashutosh Patil",
+  "license": "ISC"
+}

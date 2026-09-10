@@ -3,6 +3,9 @@ const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 
+const mongoose = require('mongoose');
+const connectDB = require('./config/db');
+
 // Load environment variables
 dotenv.config();
 
@@ -24,12 +27,19 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Health Check Endpoint
+// Health Check Endpoint (Reports Server & Database Status)
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    status: 'healthy',
+  const isDbConnected = mongoose.connection.readyState === 1;
+
+  res.status(isDbConnected ? 200 : 503).json({
+    success: isDbConnected,
+    status: isDbConnected ? 'healthy' : 'degraded',
     service: 'ServiceFlow API',
+    database: {
+      status: isDbConnected ? 'connected' : 'disconnected',
+      host: isDbConnected ? mongoose.connection.host : null,
+      name: isDbConnected ? mongoose.connection.name : null
+    },
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
   });
@@ -54,11 +64,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server listener
+// Server listener: Connect to MongoDB before accepting incoming traffic
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`[ServiceFlow] Backend server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
-    console.log(`[ServiceFlow] Health check available at http://localhost:${PORT}/api/health`);
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`[ServiceFlow] Backend server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+      console.log(`[ServiceFlow] Health check available at http://localhost:${PORT}/api/health`);
+    });
+  }).catch((err) => {
+    console.error(`[ServiceFlow] Failed to start server:`, err.message);
   });
 }
 
